@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牵引变电所环境智能监控系统</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft YaHei',Arial,sans-serif;background:#0a0f18;color:#d0dae8;min-height:100vh}
+:root{
+  --bg:#0a0f18;--bg2:#0e1522;--bg3:#131d2e;--bg4:#1a2638;
+  --border:#1e2d44;--border2:#263550;
+  --text:#d0dae8;--mute:#5a6a7e;--bright:#e8eef8;
+  --blue:#4a9eff;--green:#3dbd7e;--yellow:#f0a020;--orange:#e07020;--red:#e84040;
+  --purple:#9a6ef0;--cyan:#2dc8c8;
+}
+
+/* ========== 登录页面样式 ========== */
+.login-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0f18 0%,#1a2638 100%);
+  display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+.login-box{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:48px 40px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.login-header{text-align:center;margin-bottom:36px}
+.login-header h1{font-size:24px;color:var(--bright);margin-bottom:8px;font-weight:600}
+.login-header p{font-size:13px;color:var(--mute)}
+.login-form .form-group{margin-bottom:20px}
+.login-form label{display:block;font-size:13px;color:var(--text);margin-bottom:8px;font-weight:500}
+.login-form input{
+  width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;color:var(--bright);font-size:14px;transition:all .3s;
+}
+.login-form input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,158,255,.15)}
+.login-form input::placeholder{color:var(--mute)}
+.login-btn{
+  width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),#3a8aef);
+  border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .3s;margin-top:8px;
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,158,255,.4)}
+.login-btn:active{transform:translateY(0)}
+.login-error{background:rgba(232,64,64,.12);border:1px solid rgba(232,64,64,.3);color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+.login-error.show{display:block}
+.login-footer{text-align:center;margin-top:24px;font-size:12px;color:var(--mute)}
+
+/* ========== 用户管理模态框 ========== */
+.modal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;z-index:10000;
+}
+.modal-overlay.show{display:flex}
+.modal-box{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:32px;width:480px;max-height:85vh;overflow-y:auto;
+}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.modal-header h2{font-size:18px;color:var(--bright)}
+.modal-close{
+  width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.modal-close:hover{background:var(--bg4);color:var(--bright)}
+.user-list{margin-bottom:24px}
+.user-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  margin-bottom:10px;
+}
+.user-item-info{display:flex;align-items:center;gap:12px}
+.user-item-avatar{
+  width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:600;
+}
+.user-item-name{font-size:14px;color:var(--bright);font-weight:500}
+.user-item-actions{display:flex;gap:8px}
+.btn-sm{
+  padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text);transition:all .2s;
+}
+.btn-sm:hover{background:var(--bg4);color:var(--bright)}
+.btn-sm.danger{border-color:rgba(232,64,64,.3);color:var(--red)}
+.btn-sm.danger:hover{background:rgba(232,64,64,.15)}
+.add-user-form{padding:20px;background:var(--bg3);border:1px solid var(--border);border-radius:10px}
+.add-user-form h3{font-size:14px;color:var(--bright);margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row input{
+  padding:10px 14px;background:var(--bg4);border:1px solid var(--border);
+  border-radius:7px;color:var(--bright);font-size:13px;
+}
+.form-row input:focus{outline:none;border-color:var(--blue)}
+.add-user-btn{
+  width:100%;padding:10px;background:var(--blue);border:none;border-radius:7px;
+  color:#fff;font-size:13px;cursor:pointer;transition:all .2s;
+}
+.add-user-btn:hover{background:#3a8aef}
+
+/* ========== 原有样式 ========== */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:58px;background:var(--bg2);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.topbar-logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:500;color:var(--bright)}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#1a5276,#2980b9);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.5}
+.topbar-center{display:flex;gap:6px;font-size:12px;align-items:center}
+.badge-pill{background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.25);color:var(--blue);padding:3px 10px;border-radius:12px}
+.badge-warn{background:rgba(240,160,32,.12);border-color:rgba(240,160,32,.25);color:var(--yellow)}
+.badge-danger{background:rgba(232,64,64,.12);border-color:rgba(232,64,64,.25);color:var(--red)}
+.topbar-right{display:flex;align-items:center;gap:16px;font-size:11px;color:var(--mute)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.user-menu{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px;border-radius:8px;transition:all .2s;position:relative}
+.user-menu:hover{background:var(--bg3)}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600}
+.user-dropdown{
+  position:absolute;top:100%;right:0;margin-top:8px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:10px;padding:6px;min-width:160px;
+  display:none;box-shadow:0 10px 40px rgba(0,0,0,.4);
+}
+.user-dropdown.show{display:block}
+.user-dropdown-item{
+  padding:9px 14px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:8px;
+}
+.user-dropdown-item:hover{background:var(--bg3);color:var(--bright)}
+.user-dropdown-item.danger{color:var(--red)}
+.user-dropdown-divider{height:1px;background:var(--border);margin:4px 0}
+
+.navbar{
+  display:flex;flex-direction:column;width:210px;height:calc(100vh - 58px);
+  background:var(--bg2);border-right:1px solid var(--border);padding:16px 12px;position:fixed;left:0;top:58px;
+}
+.nav-section{margin-bottom:24px}
+.nav-section-title{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:1.5px;padding:0 12px;margin-bottom:8px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;
+  margin-bottom:3px;cursor:pointer;transition:all .2s;font-size:13.5px;color:var(--text);
+}
+.nav-item:hover{background:var(--bg3);color:var(--bright)}
+.nav-item.active{background:rgba(74,158,255,.12);color:var(--blue);font-weight:500}
+.nav-item svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.main-wrap{margin-left:210px;padding:24px 28px;max-width:1400px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:22px;font-weight:600;color:var(--bright);margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--mute);margin-bottom:24px}
+
+/* 卡片样式 */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:20px}
+.card-title{font-size:14px;font-weight:500;color:var(--bright);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* 指标卡片 */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.metric-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:18px;
+  transition:all .3s;cursor:default;position:relative;overflow:hidden;
+}
+.metric-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.metric-card.normal::before{background:var(--green)}
+.metric-card.warn::before{background:var(--yellow)}
+.metric-card.danger::before{background:var(--red)}
+.metric-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3)}
+.metric-label{font-size:12px;color:var(--mute);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.metric-value{font-size:28px;font-weight:700;color:var(--bright);line-height:1}
+.metric-unit{font-size:13px;color:var(--mute);margin-left:4px;font-weight:400}
+.metric-range{font-size:11px;color:var(--mute);margin-top:8px}
+.metric-status{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:8px}
+.metric-status.normal{background:rgba(61,189,126,.15);color:var(--green)}
+.metric-status.warn{background:rgba(240,160,32,.15);color:var(--yellow)}
+.metric-status.danger{background:rgba(232,64,64,.15);color:var(--red)}
+
+/* 图表容器 */
+.chart-grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:20px;height:320px;position:relative}
+.chart-box h3{font-size:14px;font-weight:500;color:var(--bright);margin-bottom:14px}
+.chart-canvas{width:100%!important;height:250px!important}
+
+/* 告警列表 */
+.alert-list{max-height:400px;overflow-y:auto}
+.alert-item{
+  display:flex;align-items:flex-start;gap:12px;padding:12px 14px;
+  border-bottom:1px solid var(--border);transition:background .2s;
+}
+.alert-item:last-child{border-bottom:none}
+.alert-item:hover{background:var(--bg3)}
+.alert-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.alert-dot.red{background:var(--red);box-shadow:0 0 8px rgba(232,64,64,.4)}
+.alert-dot.yellow{background:var(--yellow);box-shadow:0 0 8px rgba(240,160,32,.4)}
+.alert-dot.green{background:var(--green);box-shadow:0 0 8px rgba(61,189,126,.4)}
+.alert-info{flex:1}
+.alert-info .alert-msg{font-size:13px;color:var(--text);line-height:1.5}
+.alert-info .alert-time{font-size:11px;color:var(--mute);margin-top:3px}
+.alert-zone{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--mute);flex-shrink:0}
+
+/* 视频相关 */
+.video-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.video-box{
+  background:#000;border-radius:13px;overflow:hidden;position:relative;
+  aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;
+}
+.video-box video,.video-box img,.video-box canvas{width:100%;height:100%;object-fit:cover}
+.video-label{
+  position:absolute;bottom:0;left:0;right:0;padding:8px 14px;
+  background:linear-gradient(transparent,rgba(0,0,0,.8));
+  font-size:12px;color:#fff;display:flex;justify-content:space-between;align-items:center;
+}
+.video-status{display:flex;align-items:center;gap:5px;font-size:11px}
+.video-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.btn{
+  padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg3);color:var(--text);transition:all .2s;
+}
+.btn:hover{background:var(--bg4);color:var(--bright)}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:#3a8aef}
+.btn-group{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+
+/* Tab切换 */
+.tab-group{display:flex;gap:4px;margin-bottom:20px;background:var(--bg3);padding:4px;border-radius:10px;display:inline-flex}
+.tab{
+  padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer;
+  color:var(--mute);transition:all .2s;border:none;background:none;
+}
+.tab.active{background:var(--blue);color:#fff}
+.tab:hover:not(.active){color:var(--text)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 14px;font-size:12px;color:var(--mute);font-weight:500;border-bottom:1px solid var(--border)}
+td{padding:10px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border)}
+tr:hover td{background:var(--bg3)}
+
+/* 预测时间线 */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding-bottom:20px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-dot{
+  position:absolute;left:-20px;top:3px;width:12px;height:12px;border-radius:50%;
+  border:2px solid var(--blue);background:var(--bg2);
+}
+.timeline-dot.warn{border-color:var(--yellow);background:rgba(240,160,32,.2)}
+.timeline-dot.danger{border-color:var(--red);background:rgba(232,64,64,.2)}
+.timeline-time{font-size:12px;color:var(--blue);font-weight:500}
+.timeline-desc{font-size:13px;color:var(--text);margin-top:3px}
+
+/* 进度条 */
+.progress-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+
+/* 导出按钮区 */
+.export-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+
+/* 响应式 */
+@media(max-width:768px){
+  .navbar{display:none}
+  .main-wrap{margin-left:0;padding:16px}
+  .metric-grid{grid-template-columns:1fr 1fr}
+  .video-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== 登录页面 ========== -->
+<div class="login-overlay" id="loginPage">
+  <div class="login-box">
+    <div class="login-header">
+      <h1>🔒 系统登录</h1>
+      <p>牵引变电所环境智能监控系统</p>
+    </div>
+    <div class="login-error" id="loginError">账号或密码错误，请重试</div>
+    <form class="login-form" id="loginForm" onsubmit="return doLogin()">
+      <div class="form-group">
+        <label>账号</label>
+        <input type="text" id="loginAccount" placeholder="请输入账号" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn">登 录</button>
+    </form>
+    <div class="login-footer">默认账号：12345678 ｜ 默认密码：12345678</div>
+  </div>
+</div>
+
+<!-- ========== 主系统页面 ========== -->
+<div id="mainSystem" style="display:none">
+  <!-- 顶部栏 -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z"/></svg>
+      </div>
+      <span>牵引变电所环境智能监控系统</span>
+    </div>
+    <div class="topbar-center">
+      <span class="badge-pill">系统运行中</span>
+      <span class="badge-warn">2 项预警</span>
+      <span class="badge-danger">1 项告警</span>
+    </div>
+    <div class="topbar-right">
+      <span><span class="live-dot"></span>实时监测中</span>
+      <div class="user-menu" id="userMenuBtn" onclick="toggleDropdown()">
+        <div class="user-avatar" id="currentUserAvatar">管</div>
+        <span id="currentUserName">管理员</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-item" onclick="openUserManager()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            用户管理
+          </div>
+          <div class="user-dropdown-divider"></div>
+          <div class="user-dropdown-item danger" onclick="doLogout()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            退出登录
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 左侧导航 -->
+  <div class="navbar">
+    <div class="nav-section">
+      <div class="nav-section-title">监测中心</div>
+      <div class="nav-item active" onclick="switchPage('home')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        首页概览
+      </div>
+      <div class="nav-item" onclick="switchPage('risk')">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        风险预警
+      </div>
+      <div class="nav-item" onclick="switchPage('data')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        数据分析
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">安防监控</div>
+      <div class="nav-item" onclick="switchPage('video')">
+        <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        视频监控
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">系统管理</div>
+      <div class="nav-item" onclick="switchPage('admin')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        后台分析
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main-wrap">
+
+    <!-- 首页概览 -->
+    <div class="page active" id="page-home">
+      <div class="page-title">首页概览</div>
+      <div class="page-sub">实时监测牵引变电所环境参数，掌握设备运行状态</div>
+      <div class="metric-grid">
+        <div class="metric-card normal">
+          <div class="metric-label">🌡️ 室内温度</div>
+          <div class="metric-value">26.3<span class="metric-unit">°C</span></div>
+          <div class="metric-range">正常范围：23~28°C</div>
+          <span class="metric-status normal">正常</span>
+        </div>
+        <div class="metric-card warn">
+          <div class="metric-label">🌡️ 室外温度</div>
+          <div class="metric-value">30.1<span class="metric-unit">°C</span></div>
+          <div class="metric-range">正常范围：23~28°C</div>
+          <span class="metric-status warn">偏高</span>
+        </div>
+        <div class="metric-card normal">
+          <div class="metric-label">💧 室内湿度</div>
+          <div class="metric-value">58<span class="metric-unit">%RH</span></div>
+          <div class="metric-range">正常范围：50~70%RH</div>
+          <span class="metric-status normal">正常</span>
+        </div>
+        <div class="metric-card warn">
+          <div class="metric-label">💧 室外湿度</div>
+          <div class="metric-value">73<span class="metric-unit">%RH</span></div>
+          <div class="metric-range">正常范围：50~70%RH</div>
+          <span class="metric-status warn">偏高</span>
+        </div>
+        <div class="metric-card normal">
+          <div class="metric-label">💨 烟雾浓度</div>
+          <div class="metric-value">14<span class="metric-unit">%</span></div>
+          <div class="metric-range">正常范围：10~20%</div>
+          <span class="metric-status normal">正常</span>
+        </div>
+        <div class="metric-card normal">
+          <div class="metric-label">⚡ 设备电压</div>
+          <div class="metric-value">220<span class="metric-unit">V</span></div>
+          <div class="metric-range">额定电压：220V</div>
+          <span class="metric-status normal">正常</span>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-box">
+          <h3>📈 24小时温度趋势</h3>
+          <canvas id="homeTempChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-title">🚨 实时告警动态</div>
+          <div class="alert-list">
+            <div class="alert-item">
+              <div class="alert-dot red"></div>
+              <div class="alert-info">
+                <div class="alert-msg">室外温度达到30.1°C，超过阈值上限（28°C）</div>
+                <div class="alert-time">2026-05-09 17:32:15</div>
+              </div>
+              <span class="alert-zone">Zone-A</span>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot yellow"></div>
+              <div class="alert-info">
+                <div class="alert-msg">室外湿度达到73%RH，超过阈值上限（70%RH）</div>
+                <div class="alert-time">2026-05-09 17:28:42</div>
+              </div>
+              <span class="alert-zone">Zone-B</span>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot yellow"></div>
+              <div class="alert-info">
+                <div class="alert-msg">设备A相温度偏高，当前68.2°C</div>
+                <div class="alert-time">2026-05-09 17:15:03</div>
+              </div>
+              <span class="alert-zone">Zone-A</span>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot green"></div>
+              <div class="alert-info">
+                <div class="alert-msg">系统自检完成，所有传感器运行正常</div>
+                <div class="alert-time">2026-05-09 17:00:00</div>
+              </div>
+              <span class="alert-zone">系统</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📹 视频预览</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="video-box">
+              <div style="color:var(--mute);text-align:center">
+                <div style="font-size:40px;margin-bottom:8px">📹</div>
+                <div style="font-size:11px">通道 1 - 主变区域</div>
+              </div>
+              <div class="video-label">
+                <span>主变区域</span>
+                <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线</span>
+              </div>
+            </div>
+            <div class="video-box">
+              <div style="color:var(--mute);text-align:center">
+                <div style="font-size:40px;margin-bottom:8px">📹</div>
+                <div style="font-size:11px">通道 2 - 高压室</div>
+              </div>
+              <div class="video-label">
+                <span>高压室</span>
+                <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 风险预警页面 -->
+    <div class="page" id="page-risk">
+      <div class="page-title">风险预警中心</div>
+      <div class="page-sub">基于环境数据的智能风险评分与预测性告警</div>
+      
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:20px">
+        <div>
+          <div class="card" style="text-align:center;padding:30px 20px">
+            <div style="font-size:13px;color:var(--mute);margin-bottom:12px">环境综合风险评分</div>
+            <div style="position:relative;width:160px;height:160px;margin:0 auto 16px">
+              <canvas id="riskScoreChart" width="160" height="160"></canvas>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+                <div style="font-size:36px;font-weight:700;color:var(--yellow)">78</div>
+                <div style="font-size:11px;color:var(--mute)">分（中等风险）</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text)">上次评估：2分钟前</div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title">📊 预警等级分布</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                  <span style="color:var(--text)">温度偏高</span><span style="color:var(--yellow)">72%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:72%;background:var(--yellow)"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                  <span style="color:var(--text)">湿度偏高</span><span style="color:var(--orange)">58%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:58%;background:var(--orange)"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                  <span style="color:var(--text)">烟雾异常</span><span style="color:var(--green)">23%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:23%;background:var(--green)"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-title">🔮 预测性告警</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="font-size:12px;color:var(--mute);margin-bottom:8px">温度触顶预测</div>
+                <div style="font-size:20px;font-weight:700;color:var(--red)">~2h</div>
+                <div style="font-size:11px;color:var(--mute);margin-top:4px">预计18:45达到32°C</div>
+              </div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="font-size:12px;color:var(--mute);margin-bottom:8px">湿度触顶预测</div>
+                <div style="font-size:20px;font-weight:700;color:var(--orange)">~3h</div>
+                <div style="font-size:11px;color:var(--mute);margin-top:4px">预计19:45达到78%RH</div>
+              </div>
+            </div>
+            <div class="card-title">📅 未来12小时预警时间表</div>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot danger"></div>
+                <div class="timeline-time">18:45</div>
+                <div class="timeline-desc">室外温度预计达到32°C，建议启动空调降温</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot warn"></div>
+                <div class="timeline-time">19:45</div>
+                <div class="timeline-desc">室外湿度预计达到78%RH，建议开启除湿设备</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-time">21:00</div>
+                <div class="timeline-desc">设备A相温度预计开始下降，风险降低</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-time">23:00</div>
+                <div class="timeline-desc">环境温度预计恢复正常范围</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-box" style="height:280px;margin-top:20px">
+            <h3>📉 近7日预警趋势</h3>
+            <canvas id="riskTrendChart" class="chart-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据分析页面 -->
+    <div class="page" id="page-data">
+      <div class="page-title">数据分析</div>
+      <div class="page-sub">历史数据查询与趋势分析</div>
+      
+      <div class="tab-group">
+        <button class="tab active" onclick="switchDataTab('temp')">温度分析</button>
+        <button class="tab" onclick="switchDataTab('humi')">湿度分析</button>
+        <button class="tab" onclick="switchDataTab('smoke')">烟雾气体</button>
+        <button class="tab" onclick="switchDataTab('compare')">综合对比</button>
+      </div>
+
+      <div class="chart-box">
+        <h3 id="dataChartTitle">📈 24小时温度变化曲线</h3>
+        <canvas id="dataChart" class="chart-canvas"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 近7日数据记录</div>
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th><th>平均温度(°C)</th><th>最高温度(°C)</th><th>平均湿度(%RH)</th><th>预警次数</th><th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2026-05-09</td><td>26.3</td><td>30.1</td><td>58</td><td>3</td><td><span style="color:var(--yellow)">⚠ 预警</span></td></tr>
+            <tr><td>2026-05-08</td><td>25.1</td><td>27.8</td><td>62</td><td>1</td><td><span style="color:var(--green)">✓ 正常</span></td></tr>
+            <tr><td>2026-05-07</td><td>24.8</td><td>26.5</td><td>55</td><td>0</td><td><span style="color:var(--green)">✓ 正常</span></td></tr>
+            <tr><td>2026-05-06</td><td>25.9</td><td>28.3</td><td>68</td><td>2</td><td><span style="color:var(--yellow)">⚠ 预警</span></td></tr>
+            <tr><td>2026-05-05</td><td>23.5</td><td>25.2</td><td>52</td><td>0</td><td><span style="color:var(--green)">✓ 正常</span></td></tr>
+            <tr><td>2026-05-04</td><td>24.1</td><td>26.8</td><td>57</td><td>1</td><td><span style="color:var(--green)">✓ 正常</span></td></tr>
+            <tr><td>2026-05-03</td><td>25.5</td><td>29.1</td><td>71</td><td>4</td><td><span style="color:var(--red)">✗ 告警</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 视频监控页面 -->
+    <div class="page" id="page-video">
+      <div class="page-title">视频监控</div>
+      <div class="page-sub">多通道实时视频监控与回放管理</div>
+      
+      <div class="video-grid">
+        <div class="video-box" id="videoBox1">
+          <div style="color:var(--mute);text-align:center">
+            <div style="font-size:50px;margin-bottom:8px">📹</div>
+            <div style="font-size:12px">通道 1 - 主变区域</div>
+            <div style="font-size:11px;margin-top:4px">1920×1080 · 25fps</div>
+          </div>
+          <div class="video-label">
+            <span>主变区域</span>
+            <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线录制中</span>
+          </div>
+        </div>
+        <div class="video-box" id="videoBox2">
+          <div style="color:var(--mute);text-align:center">
+            <div style="font-size:50px;margin-bottom:8px">📹</div>
+            <div style="font-size:12px">通道 2 - 高压室</div>
+            <div style="font-size:11px;margin-top:4px">1920×1080 · 25fps</div>
+          </div>
+          <div class="video-label">
+            <span>高压室</span>
+            <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线录制中</span>
+          </div>
+        </div>
+        <div class="video-box" id="videoBox3">
+          <div style="color:var(--mute);text-align:center">
+            <div style="font-size:50px;margin-bottom:8px">📹</div>
+            <div style="font-size:12px">通道 3 - 控制室</div>
+            <div style="font-size:11px;margin-top:4px">1280×720 · 15fps</div>
+          </div>
+          <div class="video-label">
+            <span>控制室</span>
+            <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线</span>
+          </div>
+        </div>
+        <div class="video-box" id="videoBox4">
+          <div style="color:var(--mute);text-align:center">
+            <div style="font-size:50px;margin-bottom:8px">📹</div>
+            <div style="font-size:12px">通道 4 - 室外场地</div>
+            <div style="font-size:11px;margin-top:4px">1920×1080 · 25fps</div>
+          </div>
+          <div class="video-label">
+            <span>室外场地</span>
+            <span class="video-status"><span class="live-dot" style="width:6px;height:6px"></span>在线</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="video-actions">
+        <button class="btn btn-primary" onclick="alert('开始全部录制')">⏺ 全部录制</button>
+        <button class="btn" onclick="alert('截图已保存')">📷 截图</button>
+        <button class="btn" onclick="openVideoSettings()">⚙ 视频设置</button>
+        <button class="btn" onclick="alert('回放功能开发中')">🔄 录像回放</button>
+      </div>
+    </div>
+
+    <!-- 后台分析页面 -->
+    <div class="page" id="page-admin">
+      <div class="page-title">后台分析</div>
+      <div class="page-sub">系统运行数据统计与分析报表</div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">📊 今日告警总数</div>
+          <div class="metric-value">12<span class="metric-unit">次</span></div>
+          <div class="metric-range">较昨日 ↓ 3次</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">⏱ 系统运行时长</div>
+          <div class="metric-value">356<span class="metric-unit">h</span></div>
+          <div class="metric-range">连续运行 14.8 天</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📡 在线传感器</div>
+          <div class="metric-value">18<span class="metric-unit">/20</span></div>
+          <div class="metric-range">2个传感器离线</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💾 数据存储量</div>
+          <div class="metric-value">2.3<span class="metric-unit">GB</span></div>
+          <div class="metric-range">本月已用 45%</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="chart-box">
+          <h3>📊 本月预警统计</h3>
+          <canvas id="adminBarChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>🥧 预警类型分布</h3>
+          <canvas id="adminPieChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-box" style="height:280px;margin-top:20px">
+        <h3>📈 30日趋势分析</h3>
+        <canvas id="adminLineChart" class="chart-canvas"></canvas>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title">📋 采集点状态</div>
+        <table>
+          <thead>
+            <tr><th>采集点</th><th>类型</th><th>位置</th><th>状态</th><th>最后更新</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>TEMP-01</td><td>温度</td><td>主变A相</td><td><span style="color:var(--green)">● 正常</span></td><td>10秒前</td><td><button class="btn-sm">查看</button></td></tr>
+            <tr><td>TEMP-02</td><td>温度</td><td>主变B相</td><td><span style="color:var(--green)">● 正常</span></td><td>10秒前</td><td><button class="btn-sm">查看</button></td></tr>
+            <tr><td>HUMI-01</td><td>湿度</td><td>高压室</td><td><span style="color:var(--yellow)">● 预警</span></td><td>10秒前</td><td><button class="btn-sm">查看</button></td></tr>
+            <tr><td>SMOKE-01</td><td>烟雾</td><td>控制室</td><td><span style="color:var(--green)">● 正常</span></td><td>10秒前</td><td><button class="btn-sm">查看</button></td></tr>
+            <tr><td>TEMP-03</td><td>温度</td><td>室外</td><td><span style="color:var(--red)">● 告警</span></td><td>10秒前</td><td><button class="btn-sm">查看</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="export-bar">
+        <button class="btn" onclick="exportData('csv')">📥 导出CSV</button>
+        <button class="btn" onclick="exportData('json')">📥 导出JSON</button>
+        <button class="btn" onclick="window.print()">🖨️ 打印报表</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 用户管理模态框 ========== -->
+<div class="modal-overlay" id="userManagerModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>👥 用户管理</h2>
+      <button class="modal-close" onclick="closeUserManager()">✕</button>
+    </div>
+    <div class="user-list" id="userList"></div>
+    <div class="add-user-form">
+      <h3>➕ 添加新用户</h3>
+      <div class="form-row">
+        <input type="text" id="newAccount" placeholder="账号">
+        <input type="password" id="newPassword" placeholder="密码">
+      </div>
+      <div class="form-row">
+        <input type="text" id="newNickname" placeholder="昵称（可选）">
+        <input type="text" id="confirmPassword" placeholder="确认密码">
+      </div>
+      <button class="add-user-btn" onclick="addUser()">添加用户</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====================================================================
+   登录认证系统
+   ==================================================================== */
+
+// 初始化默认账号
+function initDefaultUser() {
+  let users = localStorage.getItem('tsUsers');
+  if (!users) {
+    const defaultUsers = [
+      { account: '12345678', password: '12345678', nickname: '管理员' }
+    ];
+    localStorage.setItem('tsUsers', JSON.stringify(defaultUsers));
+  }
+}
+
+// 获取所有用户
+function getUsers() {
+  return JSON.parse(localStorage.getItem('tsUsers') || '[]');
+}
+
+// 保存用户列表
+function saveUsers(users) {
+  localStorage.setItem('tsUsers', JSON.stringify(users));
+}
+
+// 登录验证
+function doLogin() {
+  const account = document.getElementById('loginAccount').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  
+  if (!account || !password) {
+    showLoginError('请输入账号和密码');
+    return false;
+  }
+  
+  const users = getUsers();
+  const user = users.find(u => u.account === account && u.password === password);
+  
+  if (user) {
+    // 登录成功
+    localStorage.setItem('tsCurrentUser', JSON.stringify(user));
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainSystem').style.display = 'block';
+    document.getElementById('currentUserName').textContent = user.nickname || user.account;
+    document.getElementById('currentUserAvatar').textContent = (user.nickname || user.account).charAt(0);
+    initCharts();
+  } else {
+    showLoginError('账号或密码错误，请重试');
+  }
+  
+  return false;
+}
+
+// 显示登录错误
+function showLoginError(msg) {
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = msg;
+  errEl.classList.add('show');
+  setTimeout(() => errEl.classList.remove('show'), 3000);
+}
+
+// 退出登录
+function doLogout() {
+  localStorage.removeItem('tsCurrentUser');
+  document.getElementById('mainSystem').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginForm').reset();
+  document.getElementById('userDropdown').classList.remove('show');
+}
+
+// 检查登录状态
+function checkLogin() {
+  const currentUser = localStorage.getItem('tsCurrentUser');
+  if (currentUser) {
+    const user = JSON.parse(currentUser);
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainSystem').style.display = 'block';
+    document.getElementById('currentUserName').textContent = user.nickname || user.account;
+    document.getElementById('currentUserAvatar').textContent = (user.nickname || user.account).charAt(0);
+    initCharts();
+  }
+}
+
+// 用户下拉菜单
+function toggleDropdown() {
+  document.getElementById('userDropdown').classList.toggle('show');
+}
+
+// 点击其他地方关闭下拉
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.user-menu')) {
+    document.getElementById('userDropdown').classList.remove('show');
+  }
+});
+
+/* ====================================================================
+   用户管理
+   ==================================================================== */
+function openUserManager() {
+  document.getElementById('userDropdown').classList.remove('show');
+  renderUserList();
+  document.getElementById('userManagerModal').classList.add('show');
+}
+
+function closeUserManager() {
+  document.getElementById('userManagerModal').classList.remove('show');
+}
+
+function renderUserList() {
+  const users = getUsers();
+  const listEl = document.getElementById('userList');
+  
+  if (users.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--mute);padding:20px">暂无用户，请添加</div>';
+    return;
+  }
+  
+  listEl.innerHTML = users.map((u, i) => `
+    <div class="user-item">
+      <div class="user-item-info">
+        <div class="user-item-avatar">${(u.nickname || u.account).charAt(0)}</div>
+        <div>
+          <div class="user-item-name">${u.nickname || u.account}</div>
+          <div style="font-size:11px;color:var(--mute)">账号：${u.account}</div>
+        </div>
+      </div>
+      <div class="user-item-actions">
+        <button class="btn-sm" onclick="editUser(${i})">修改密码</button>
+        ${users.length > 1 ? `<button class="btn-sm danger" onclick="deleteUser(${i})">删除</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function addUser() {
+  const account = document.getElementById('newAccount').value.trim();
+  const password = document.getElementById('newPassword').value.trim();
+  const nickname = document.getElementById('newNickname').value.trim();
+  const confirmPwd = document.getElementById('confirmPassword').value.trim();
+  
+  if (!account || !password) {
+    alert('账号和密码不能为空');
+    return;
+  }
+  
+  if (password !== confirmPwd) {
+    alert('两次输入的密码不一致');
+    return;
+  }
+  
+  const users = getUsers();
+  
+  if (users.find(u => u.account === account)) {
+    alert('该账号已存在');
+    return;
+  }
+  
+  users.push({ account, password, nickname: nickname || account });
+  saveUsers(users);
+  
+  // 清空表单
+  document.getElementById('newAccount').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('newNickname').value = '';
+  document.getElementById('confirmPassword').value = '';
+  
+  renderUserList();
+}
+
+function editUser(index) {
+  const users = getUsers();
+  const user = users[index];
+  const newPwd = prompt(`修改用户「${user.nickname || user.account}」的密码：\n\n请输入新密码：`, '');
+  
+  if (newPwd && newPwd.trim()) {
+    users[index].password = newPwd.trim();
+    saveUsers(users);
+    alert('密码修改成功');
+    renderUserList();
+  }
+}
+
+function deleteUser(index) {
+  const users = getUsers();
+  const user = users[index];
+  
+  if (confirm(`确定要删除用户「${user.nickname || user.account}」吗？\n删除后该用户将无法登录系统。`)) {
+    users.splice(index, 1);
+    saveUsers(users);
+    renderUserList();
+  }
+}
+
+/* ====================================================================
+   页面切换
+   ==================================================================== */
+function switchPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function switchDataTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  const titles = {
+    temp: '📈 24小时温度变化曲线',
+    humi: '📈 24小时湿度变化曲线',
+    smoke: '📈 24小时烟雾浓度曲线',
+    compare: '📈 温度/湿度/烟雾综合对比'
+  };
+  document.getElementById('dataChartTitle').textContent = titles[tab];
+  updateDataChart(tab);
+}
+
+/* ====================================================================
+   图表初始化
+   ==================================================================== */
+let homeTempChart, riskScoreChart, riskTrendChart, dataChart;
+let adminBarChart, adminPieChart, adminLineChart;
+
+function initCharts() {
+  // 首页温度趋势
+  const tempCtx = document.getElementById('homeTempChart');
+  if (tempCtx) {
+    if (homeTempChart) homeTempChart.destroy();
+    homeTempChart = new Chart(tempCtx, {
+      type: 'line',
+      data: {
+        labels: ['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','22:00'],
+        datasets: [{
+          label: '室内温度(°C)',
+          data: [24.1,23.5,23.2,23.8,25.2,26.8,27.5,28.1,27.8,26.3,25.1,24.5],
+          borderColor: '#4a9eff',
+          backgroundColor: 'rgba(74,158,255,.1)',
+          fill: true,
+          tension: 0.4
+        },{
+          label: '室外温度(°C)',
+          data: [25.2,24.8,24.5,25.1,27.3,29.5,31.2,32.5,31.8,30.1,28.4,26.8],
+          borderColor: '#f0a020',
+          backgroundColor: 'rgba(240,160,32,.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#d0dae8' } } },
+        scales: {
+          x: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' } },
+          y: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' }, min: 20, max: 35 }
+        }
+      }
+    });
+  }
+  
+  // 风险评分仪表盘
+  const riskCtx = document.getElementById('riskScoreChart');
+  if (riskCtx) {
+    if (riskScoreChart) riskScoreChart.destroy();
+    riskScoreChart = new Chart(riskCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['风险值', '安全值'],
+        datasets: [{ data: [78, 22], backgroundColor: ['#f0a020', 'rgba(30,45,68,.3)'], borderWidth: 0 }]
+      },
+      options: {
+        responsive: false,
+        cutout: '78%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+      }
+    });
+  }
+  
+  // 近7日预警趋势
+  const trendCtx = document.getElementById('riskTrendChart');
+  if (trendCtx) {
+    if (riskTrendChart) riskTrendChart.destroy();
+    riskTrendChart = new Chart(trendCtx, {
+      type: 'bar',
+      data: {
+        labels: ['05-03','05-04','05-05','05-06','05-07','05-08','05-09'],
+        datasets: [{
+          label: '预警次数',
+          data: [4, 1, 0, 2, 0, 1, 3],
+          backgroundColor: ['#e84040','#f0a020','#3dbd7e','#f0a020','#3dbd7e','#f0a020','#f0a020'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#5a6a7e' }, grid: { display: false } },
+          y: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+  
+  // 数据分析图表
+  initDataChart();
+  
+  // 后台分析图表
+  initAdminCharts();
+}
+
+function initDataChart() {
+  const ctx = document.getElementById('dataChart');
+  if (!ctx) return;
+  if (dataChart) dataChart.destroy();
+  
+  dataChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','22:00'],
+      datasets: [{
+        label: '室内(°C)',
+        data: [24.1,23.5,23.2,23.8,25.2,26.8,27.5,28.1,27.8,26.3,25.1,24.5],
+        borderColor: '#4a9eff',
+        backgroundColor: 'rgba(74,158,255,.1)',
+        fill: true, tension: 0.4
+      },{
+        label: '室外(°C)',
+        data: [25.2,24.8,24.5,25.1,27.3,29.5,31.2,32.5,31.8,30.1,28.4,26.8],
+        borderColor: '#f0a020',
+        backgroundColor: 'rgba(240,160,32,.1)',
+        fill: true, tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#d0dae8' } } },
+      scales: {
+        x: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' } },
+        y: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' } }
+      }
+    }
+  });
+}
+
+function updateDataChart(tab) {
+  if (!dataChart) return;
+  
+  const configs = {
+    temp: {
+      datasets: [
+        { label:'室内(°C)', data:[24.1,23.5,23.2,23.8,25.2,26.8,27.5,28.1,27.8,26.3,25.1,24.5], borderColor:'#4a9eff', backgroundColor:'rgba(74,158,255,.1)', fill:true, tension:0.4 },
+        { label:'室外(°C)', data:[25.2,24.8,24.5,25.1,27.3,29.5,31.2,32.5,31.8,30.1,28.4,26.8], borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,.1)', fill:true, tension:0.4 }
+      ]
+    },
+    humi: {
+      datasets: [
+        { label:'室内(%RH)', data:[56,55,52,53,55,57,60,62,61,58,57,56], borderColor:'#2dc8c8', backgroundColor:'rgba(45,200,200,.1)', fill:true, tension:0.4 },
+        { label:'室外(%RH)', data:[62,61,60,63,68,72,75,77,76,73,70,66], borderColor:'#9a6ef0', backgroundColor:'rgba(154,110,240,.1)', fill:true, tension:0.4 }
+      ]
+    },
+    smoke: {
+      datasets: [
+        { label:'烟雾浓度(%)', data:[12,11,10,11,13,15,18,20,19,14,13,12], borderColor:'#e84040', backgroundColor:'rgba(232,64,64,.1)', fill:true, tension:0.4 }
+      ]
+    },
+    compare: {
+      datasets: [
+        { label:'温度(°C)×2', data:[24,23,23,24,26,28,30,31,30,28,26,24], borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,.1)', fill:true, tension:0.4, yAxisID:'y' },
+        { label:'湿度(%RH)/2', data:[28,27,26,27,34,36,38,39,38,36,35,28], borderColor:'#2dc8c8', backgroundColor:'rgba(45,200,200,.1)', fill:true, tension:0.4, yAxisID:'y1' }
+      ]
+    }
+  };
+  
+  const cfg = configs[tab];
+  dataChart.data.datasets = cfg.datasets;
+  
+  if (tab === 'compare') {
+    dataChart.options.scales.y1 = {
+      position: 'right', ticks: { color: '#5a6a7e' }, grid: { display: false }
+    };
+  } else {
+    delete dataChart.options.scales.y1;
+  }
+  
+  dataChart.update();
+}
+
+function initAdminCharts() {
+  // 本月预警柱状图
+  const barCtx = document.getElementById('adminBarChart');
+  if (barCtx) {
+    if (adminBarChart) adminBarChart.destroy();
+    adminBarChart = new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: ['第1周','第2周','第3周','第4周','第5周'],
+        datasets: [{
+          label: '预警次数',
+          data: [8, 12, 15, 10, 6],
+          backgroundColor: ['#4a9eff','#f0a020','#e84040','#f0a020','#3dbd7e'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#5a6a7e' }, grid: { display: false } },
+          y: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+  
+  // 饼图
+  const pieCtx = document.getElementById('adminPieChart');
+  if (pieCtx) {
+    if (adminPieChart) adminPieChart.destroy();
+    adminPieChart = new Chart(pieCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['温度预警', '湿度预警', '烟雾预警', '其他'],
+        datasets: [{
+          data: [35, 28, 22, 15],
+          backgroundColor: ['#f0a020','#2dc8c8','#e84040','#5a6a7e'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#d0dae8' } } }
+      }
+    });
+  }
+  
+  // 30日趋势
+  const lineCtx = document.getElementById('adminLineChart');
+  if (lineCtx) {
+    if (adminLineChart) adminLineChart.destroy();
+    const days = Array.from({length: 30}, (_, i) => (i + 1).toString());
+    adminLineChart = new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: days,
+        datasets: [{
+          label: '预警次数',
+          data: days.map(() => Math.floor(Math.random() * 5)),
+          borderColor: '#4a9eff',
+          backgroundColor: 'rgba(74,158,255,.1)',
+          fill: true, tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#d0dae8' } } },
+        scales: {
+          x: { ticks: { color: '#5a6a7e', maxTicksLimit: 10 }, grid: { display: false } },
+          y: { ticks: { color: '#5a6a7e' }, grid: { color: 'rgba(30,45,68,.5)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+}
+
+/* ====================================================================
+   数据导出
+   ==================================================================== */
+function exportData(format) {
+  if (format === 'csv') {
+    const csv = '日期,平均温度,最高温度,平均湿度,预警次数\n2026-05-09,26.3,30.1,58,3\n2026-05-08,25.1,27.8,62,1';
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '环境数据_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  } else if (format === 'json') {
+    const data = [
+      { date: '2026-05-09', temp: 26.3, tempMax: 30.1, humidity: 58, alerts: 3 }
+    ];
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '环境数据_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+  }
+}
+
+/* ====================================================================
+   初始化
+   ==================================================================== */
+initDefaultUser();
+checkLogin();
+
+// 回车登录
+document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>
